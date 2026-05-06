@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gerenciador de Ocorrências</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ LOGIN ═══════════════════════════════════ -->
+<div id="loginPage" class="page active">
+  <div class="login-grid">
+    <div class="login-brand">
+      <div>
+        <div class="brand-logo">Gerenciador de Ocorrências - SGSO</div>
+        <div class="brand-title">Gerenciar<br/>é <span>controlar</span><br/>riscos.</div>
+        <div class="brand-desc">Plataforma de registro, tratamento e resolução de ocorrências aeronáuticas.</div>
+      </div>
+    </div>
+    <div class="login-form-wrap">
+      <h2>Entrar no sistema</h2>
+      <p>selecione seu perfil de acesso</p>
+      <div class="profile-tabs">
+        <button class="profile-tab active" data-profile="comum" onclick="selectProfile('comum')">👤 Usuário</button>
+        <button class="profile-tab" data-profile="tratativas" onclick="selectProfile('tratativas')">🛡️ Tratativas</button>
+      </div>
+      <div class="field">
+        <label>USUÁRIO</label>
+        <input type="text" id="loginUser" placeholder="seu usuário" autocomplete="off"/>
+        <div class="hint" id="loginHint">perfil: usuário comum — insere ocorrências</div>
+      </div>
+      <div class="field">
+        <label>SENHA</label>
+        <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn-login" onclick="doLogin()">Entrar →</button>
+      <div id="loginError">⚠ Credenciais inválidas. Tente novamente.</div>
+      <div style="margin-top:16px; font-family:var(--mono); font-size:.68rem; color:var(--muted);">
+        demo → usuário: <strong style="color:var(--accent2)">user</strong> / senha: <strong style="color:var(--accent2)">1234</strong> &nbsp;|&nbsp;
+        tratativas: <strong style="color:var(--accent2)">admin</strong> / <strong style="color:var(--accent2)">1234</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ APP ═══════════════════════════════════ -->
+<div id="appPage" class="page">
+  <nav class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Gerenciador de Ocorrências</div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-nav">
+        <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="showView('nova')">Nova Ocorrência</button>
+        <button class="nav-btn hidden" id="navTratativas" onclick="showView('tratativas')">Tratativas</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div>
+          <div id="userName" style="font-size:.8rem; font-weight:700;">Usuário</div>
+          <div class="user-role" id="userRole">comum</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </nav>
+
+  <main class="app-main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="view active" id="viewDashboard">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">Dashboard <span>·</span> Visão Geral</div>
+          <div class="sec-sub" id="dashboardSub">// carregando...</div>
+        </div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="form-card">
+        <h3>Ocorrências Recentes</h3>
+        <div id="dashboardList"></div>
+      </div>
+    </div>
+
+    <!-- ── NOVA OCORRÊNCIA ── -->
+    <div class="view" id="viewNova">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">Nova <span>Ocorrência</span></div>
+          <div class="sec-sub"> preencha os campos abaixo para registrar</div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h3>Dados da Ocorrência</h3>
+        <div class="form-grid">
+          <div class="f-field span2">
+            <label>TÍTULO *</label>
+            <input type="text" id="fTitulo" placeholder="Título objetivo da ocorrência"/>
+          </div>
+          <div class="f-field">
+            <label>DATA *</label>
+            <input type="date" id="fData"/>
+          </div>
+          <div class="f-field">
+            <label>AGENTE / RESPONSÁVEL *</label>
+            <input type="text" id="fAgente" placeholder="Nome do agente ou responsável"/>
+          </div>
+          <div class="f-field span2">
+            <label>DESCRIÇÃO *</label>
+            <textarea id="fDescricao" placeholder="Descreva a ocorrência com o máximo de detalhes possível..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="addOcorrencia()">Registrar Ocorrência</button>
+          <button class="btn-secondary" onclick="clearForm()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TRATATIVAS (somente admin) ── -->
+    <div class="view" id="viewTratativas">
+      <div class="sec-header">
+        <div>
+          <div class="sec-title">Painel de <span>Tratativas</span></div>
+          <div class="sec-sub"> gerencie, filtre e resolva as ocorrências registradas</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="filtroTxt" placeholder="🔍  buscar por título, agente ou descrição..."/>
+        <select id="filtroSt">
+          <option value="">Todos os status</option>
+          <option value="Aberta">Aberta</option>
+          <option value="Em tratamento">Em tratamento</option>
+          <option value="Resolvida">Resolvida</option>
+        </select>
+        <select id="filtroPr">
+          <option value="">Todas as prioridades</option>
+          <option value="Alta">Alta</option>
+          <option value="Média">Média</option>
+          <option value="Baixa">Baixa</option>
+        </select>
+        <button class="btn-primary" onclick="renderTratativas()">Filtrar</button>
+        <button class="btn-secondary" onclick="clearFilters()">Limpar</button>
+      </div>
+
+      <div id="trataList" class="occ-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════ MODAL DE TRATAMENTO ═══════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Tratar Ocorrência</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- Dados originais (readonly) -->
+    <div class="modal-section">
+      <div class="modal-section-title">📋 Dados Originais</div>
+      <div class="form-grid">
+        <div class="f-field">
+          <label>TÍTULO</label>
+          <input type="text" id="mTitulo" readonly style="opacity:.6;cursor:default;"/>
+        </div>
+        <div class="f-field">
+          <label>DATA</label>
+          <input type="text" id="mData" readonly style="opacity:.6;cursor:default;"/>
+        </div>
+        <div class="f-field">
+          <label>AGENTE</label>
+          <input type="text" id="mAgente" readonly style="opacity:.6;cursor:default;"/>
+        </div>
+        <div class="f-field">
+          <label>STATUS ATUAL</label>
+          <input type="text" id="mStatus" readonly style="opacity:.6;cursor:default;"/>
+        </div>
+        <div class="f-field span2">
+          <label>DESCRIÇÃO ORIGINAL</label>
+          <textarea id="mDesc" readonly style="opacity:.6;cursor:default; min-height:70px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Identificação -->
+    <div class="modal-section">
+      <div class="modal-section-title">🗂️ Identificação</div>
+      <div class="form-grid cols3">
+        <div class="f-field">
+          <label>STATUS</label>
+          <select id="mStatusEdit">
+            <option value="">Selecione</option>
+            <option>Aberta</option>
+            <option>Em tratamento</option>
+            <option>Resolvida</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>Nº DA OCORRÊNCIA</label>
+          <input type="text" id="mNumOc" placeholder="Ex.: OC-2025-001"/>
+        </div>
+        <div class="f-field">
+          <label>ORIGEM DA OC</label>
+          <input type="text" id="mOrigem" placeholder="Ex.: Kaero, E-mail..."/>
+        </div>
+        <div class="f-field">
+          <label>DATA DE RECEBIMENTO</label>
+          <input type="date" id="mDataReceb"/>
+        </div>
+        <div class="f-field">
+          <label>DATA E HORÁRIO DO EVENTO</label>
+          <input type="datetime-local" id="mDataHoraEvento"/>
+        </div>
+        <div class="f-field">
+          <label>PRIORIDADE</label>
+          <select id="mPrioridade">
+            <option value="">Selecione</option>
+            <option>Alta</option>
+            <option>Média</option>
+            <option>Baixa</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Biblioteca / Classificação aeronáutica -->
+    <div class="modal-section">
+      <div class="modal-section-title">Classificação</div>
+      <div class="form-grid">
+        <div class="f-field span2">
+          <label>BIBLIOTECA (PERIGO)</label>
+          <select id="mBiblioteca">
+            <option value="">Selecione</option>
+            <option>P-1: FOD</option>
+            <option>P-2: Falha no gerenciamento do perigo fauna</option>
+            <option>P-4: Jet Blast</option>
+            <option>P-6: Manuseio de combustível</option>
+            <option>P-7: Movimentação de Solo</option>
+            <option>P-15: Operações de Rampa (marshalling, catering, reboque, manuseio de bagagens, pontes de embarque, etc)</option>
+            <option>P-19: Infraestrutura Deficiente</option>
+            <option>P-20: Emergência Aeronáutica</option>
+            <option>P-21: Fatores Externos</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>CLASSIFICAÇÃO</label>
+          <select id="mClassificacao">
+            <option value="">Selecione</option>
+            <option>DERRAMAMENTO - COMBUSTIVEL</option>
+            <option>INFRAÇÃO</option>
+            <option>MANUTENÇÃO / INFRAESTRUTURA</option>
+            <option>OC. AERONAUTICA</option>
+            <option>OC. AREA DE MOVIMENTO</option>
+            <option>OC. OPERACIONAL</option>
+            <option>OC. SOLO</option>
+            <option>RISCO EXTERNO</option>
+            <option>RISCO FAUNA</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>TIPIFICAÇÃO</label>
+          <select id="mTipificacao">
+            <option value="">Selecione</option>
+            <option>ACIDENTE DE TRABALHO</option>
+            <option>COLISAO - VEICULOS/EQUIPAMENTOS</option>
+            <option>DERRAMAMENTO - COMBUSTIVEL</option>
+            <option>DESAGREGAÇÃO DE PAVIMENTO</option>
+            <option>EMERGENCIA - MAY DAY</option>
+            <option>FALHA DE PROCEDIMENTO</option>
+            <option>INCURSÃO DE TWY R / S/ T</option>
+            <option>PANE EQUIPAMENTO</option>
+            <option>PRINCIPIO DE INCENDIO EM EQUIPAMENTOS</option>
+            <option>RISCO EXTERNO - LASER</option>
+            <option>RISCO FAUNA - COM DANO</option>
+            <option>RISCO FAUNA - SEM DANO</option>
+            <option>RISCO FAUNA - AVISTAMENTO</option>
+            <option>RISCO FOD - AVISTAMENTO</option>
+            <option>TOMBAMENTO DE EQUIPAMENTO</option>
+            <option>UREGENCIA - PAN PAN</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>TIPO DE OCORRÊNCIA</label>
+          <select id="mTipo">
+            <option value="">Selecione</option>
+            <option>ACIDENTE DE TRABALHO</option>
+            <option>AVISTAMENTO DE FAUNA</option>
+            <option>COLISAO COM FAUNA</option>
+            <option>COLISAO ENVOLVENDO AERONAVE</option>
+            <option>CONTROLE DE ACESSO</option>
+            <option>DERRAMAMENTO DE COMBUSTIVEL AERONAVE</option>
+            <option>DESCUMPRIMENTO DA NORMA</option>
+            <option>EMERGENCIA - MAY DAY</option>
+            <option>F.O.D</option>
+            <option>IMPRUDÊNCIA/INDISCIPLINA NA DIREÇÃO</option>
+            <option>INCURSAO DE TWY</option>
+            <option>INFRAESTRUTURA AEROPORTUARIA</option>
+            <option>JET BLAST</option>
+            <option>LASER</option>
+            <option>OCORRENCIA DE SOLO</option>
+            <option>PERIGO FAUNA</option>
+            <option>PROCEDIMENTO CIA AEREA</option>
+            <option>UREGENCIA - PAN PAN</option>
+            <option>VEÍCULOS E/OU EQUIPAMENTOS APRESENTANDO PROBLEMAS DURANTE A OPERAÇÃO</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>RISCO</label>
+          <select id="mRisco">
+            <option value="">Selecione</option>
+            <option>ABALROAMENTO DE AERONAVE COM ESCADA</option>
+            <option>APONTAMENTO DE LASER</option>
+            <option>AVISTAMENTO DE CARCAÇA</option>
+            <option>AVISTAMENTO DE COBRA</option>
+            <option>COLISÃO COM AVE</option>
+            <option>COLISÃO DE TRATOR COM TOWBAR</option>
+            <option>DERRAMAMENTO DE COMBUSTÍVEL</option>
+            <option>DESAGREGAÇÃO DE PAVIMENTO</option>
+            <option>DETRITOS DE PAVIMENTO</option>
+            <option>ESCADA DE MANUTENÇÃO PRENSADA NA AERONAVE</option>
+            <option>ESTOURO DE CÂMARA DE AR</option>
+            <option>F.O.D</option>
+            <option>INCURSÃO DE TWY</option>
+            <option>INDICAÇÃO DE FOGO NO PORÃO</option>
+            <option>INGRESSO ERRADO NA POSIÇÃO</option>
+            <option>INVASÃO DE ÁREA DE SEGURANÇA DA AERONAVE</option>
+            <option>JET BLAST</option>
+            <option>OBSTRUÇÃO NA ÁREA DE SEGURANÇA DA AERONAVE</option>
+            <option>PANE DE BATERIA NO ÔNIBUS</option>
+            <option>PANE DE REBOCADOR DURANTE PUSHBACK</option>
+            <option>PANE ELÉTRICA</option>
+            <option>PARAFUSO na TWY</option>
+            <option>PISTA ESCORREGADIA</option>
+            <option>PRINCIPIO DE INCÊNDIO</option>
+            <option>QUEBRA DE CAMBÃO</option>
+            <option>QUEBRA DE PINO DE CISALHAMENTO DA BARRA</option>
+            <option>QUEDA DE COLABORADOR</option>
+            <option>RECOLHIMENTO DE CARCAÇA</option>
+            <option>SOLTURA DE RODA</option>
+            <option>TOMBAMENTO DE EQUIPAMENTO</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- loc da oc -->
+    <div class="modal-section">
+      <div class="modal-section-title">📍 Localização</div>
+      <div class="form-grid">
+        <div class="f-field">
+          <label>LOCAL</label>
+          <select id="mLocal">
+            <option value="">Selecione</option>
+            <option>P1 BOX 112</option>
+            <option>P1 BOX 114</option>
+            <option>P2 BOX 119</option>
+            <option>P2 BOX 122</option>
+            <option>P2 BOX 127</option>
+            <option>P2 BOX 128</option>
+            <option>P2 BOX 129</option>
+            <option>P2 BOX 130</option>
+            <option>P2 BOX 134</option>
+            <option>P2 BOX 135</option>
+            <option>PPD</option>
+            <option>TWY ECO</option>
+            <option>TWY FOX TROT 2</option>
+            <option>TWY T</option>
+            <option>VIA DE ACESSO</option>
+            <option>VIAS DE SERVICO P1</option>
+            <option>VIAS DE SERVICO P2</option>
+          </select>
+        </div>
+        <div class="f-field">
+          <label>EMPRESA ENVOLVIDA</label>
+          <select id="mEmpresa">
+            <option value="">Selecione</option>
+            <option>AZUL</option>
+            <option>BHA - FAUNA</option>
+            <option>BHA - INFRA</option>
+            <option>BHA - MAN</option>
+            <option>BHA - OPS</option>
+            <option>GOL</option>
+            <option>LATAM</option>
+            <option>REAL AVIATION</option>
+          </select>
+        </div>
+        <div class="f-field span2">
+          <label>ENVOLVIDOS</label>
+          <input type="text" id="mEnvolvidos" placeholder="Nomes ou setores envolvidos"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- detalhamento da oc -->
+    <div class="modal-section">
+      <div class="modal-section-title">📝 Detalhamento da Tratativa</div>
+      <div class="form-grid">
+        <div class="f-field span2">
+          <label>DETALHAMENTO</label>
+          <textarea id="mDetalhamento" placeholder="Detalhe o contexto, causas e impactos identificados..."></textarea>
+        </div>
+        <div class="f-field span2">
+          <label>TRATATIVAS REALIZADAS</label>
+          <textarea id="mTratativas" placeholder="Descreva as ações já tomadas para tratar a ocorrência..."></textarea>
+        </div>
+        <div class="f-field span2">
+          <label>PLANO DE AÇÃO (5W1H)</label>
+          <div id="planoTable" style="margin-top:4px;"></div>
+          <button type="button" onclick="addPlanoRow()" class="btn-add-plano">+ Adicionar linha ao plano</button>
+        </div>
+        <div class="f-field">
+          <label>PRAZO DE RESOLUÇÃO</label>
+          <input type="date" id="mPrazo"/>
+        </div>
+        <div class="f-field">
+          <label>RESPONSÁVEL PELA TRATATIVA</label>
+          <input type="text" id="mResponsavel" placeholder="Nome do responsável"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: 24px; justify-content: space-between;">
+      <button class="btn-danger" onclick="resolverModal()">✓ Marcar como Resolvida</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarTratativa()">Salvar Tratativa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="script.js"></script>
+</body>
+</html>
