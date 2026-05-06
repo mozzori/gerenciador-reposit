@@ -159,6 +159,19 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
     border-radius: 999px; padding: 5px 14px 5px 8px;
     font-size: .8rem;
 }
+
+/* icon bh airprot */
+
+.app-logo {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  height: 76px;
+  z-index: 999;
+  object-fit: contain;
+  opacity: 1;
+}
+
 .user-avatar {
     width: 26px; height: 26px; border-radius: 50%;
     background: var(--accent); display: flex; align-items: center; justify-content: center;
